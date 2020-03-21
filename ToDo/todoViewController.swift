@@ -10,7 +10,7 @@ import UIKit
 
 class todoViewController: UITableViewController{
 
-    let baseArr = ["eggs", "rad" ,"sky"]
+    var baseArr = ["eggs", "rad" ,"sky"]
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
@@ -43,6 +43,23 @@ class todoViewController: UITableViewController{
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
-
+    @IBAction func addButton(_ sender: UIBarButtonItem) {
+        var str = UITextField()
+        let alert = UIAlertController(title: "Add a New Item", message: "", preferredStyle: .alert)
+        
+        let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
+            self.baseArr.append(str.text!)
+            self.tableView.reloadData()
+        }
+        
+        alert.addTextField { (textF) in
+            textF.placeholder = "Create New Item"
+            str = textF
+        }
+        alert.addAction(action)
+        present(alert, animated: true, completion: nil)
+        
+        
+    }
 }
 
