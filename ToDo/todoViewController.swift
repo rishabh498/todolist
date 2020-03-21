@@ -11,9 +11,16 @@ import UIKit
 class todoViewController: UITableViewController{
 
     var baseArr = ["eggs", "rad" ,"sky"]
+    
+    let def = UserDefaults.standard
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
+        
+        if let base = def.array(forKey: "todolist") as? [String]{
+            baseArr = base
+        }
     }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -49,6 +56,7 @@ class todoViewController: UITableViewController{
         
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
             self.baseArr.append(str.text!)
+            self.def.set(self.baseArr, forKey: "todolist")
             self.tableView.reloadData()
         }
         
