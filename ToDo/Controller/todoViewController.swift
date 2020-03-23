@@ -8,32 +8,61 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
-
-class todoViewController: UITableViewController{
+class todoViewController: swipeTableViewController{
 
     var todoItems: Results<Item>?
 
     let realm = try! Realm()
     
-    var selectCat : Category?
+    var selectCat : Category?{
+        didSet{
+            loadItems()
+        }
+    }
     
+    @IBOutlet weak var sea: UISearchBar!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-          loadItems()
-
+        tableView.separatorStyle = .none
+        tableView.rowHeight = 70.0
+     
+    }
+    override func viewWillAppear(_ animated: Bool) {
+        title = selectCat!.name
+        guard let colorHex = selectCat?.color else{fatalError()}
+        updateNavbar(withhexString: colorHex)
+        
+    }
+    
+    func updateNavbar(withhexString colorHex : String){
+        
+        guard let navbar = navigationController?.navigationBar else {fatalError()
+        }
+        guard let navColor =  UIColor(hexString: colorHex) else {fatalError()}
+        
+        navbar.barTintColor = navColor
+        navbar.tintColor = ContrastColorOf(navColor, returnFlat: true)
+        sea.barTintColor = navColor
+        
     }
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return todoItems?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "todoCell", for: indexPath)
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
         if let item = todoItems?[indexPath.row]{
                     cell.textLabel?.text = item.title
+                    cell.accessoryType = item.done ? .checkmark : .none
+            if let color = UIColor(hexString: self.selectCat!.color)?.darken(byPercentage: CGFloat(indexPath.row)/CGFloat(todoItems!.count)){
+                cell.backgroundColor = color
+                cell.textLabel?.textColor = ContrastColorOf( color, returnFlat: true)
+            }
             }
         else{
             cell.textLabel?.text = "No Items added"
@@ -45,10 +74,20 @@ class todoViewController: UITableViewController{
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
        
         
+       if let item = todoItems?[indexPath.row]{
+            
+        do{
+            try realm.write{
+                
+                item.done = !item.done
+            }
+        }
+        catch{
+            print(error)
+            }
+        }
         
-       // todoItems[indexPath.row].done = !todoItems[indexPath.row].done
-
-        //self.saveData()
+        self.tableView.reloadData()
         
         tableView.deselectRow(at: indexPath, animated: true)
     }
@@ -103,27 +142,40 @@ class todoViewController: UITableViewController{
         tableView.reloadData()
         
     }
+    
+    override func updatemodel(at Indexpath: IndexPath) {
+        
+        if let curTodo = todoItems?[Indexpath.row]{
+            do{
+                try self.realm.write{
+                    self.realm.delete(curTodo)
+                }
+                self.tableView.reloadData()
+            }
+            catch{
+                print(error)
+            }
+            
+        }
+    }
 }
 
-//extension todoViewController : UISearchBarDelegate{
-//    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-//        
-//        let req : NSFetchRequest<Item> = Item.fetchRequest()
-//       let predic = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
-//        
-//       req.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
-//        
-//       loadItems(with: req, predicate: predic)
-//    }
-//    
-//    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-//        if searchBar.text?.count == 0{
-//            loadItems()
-//        
-//        DispatchQueue.main.async {
-//            searchBar.resignFirstResponder()
-//        }
-//    }
-//}
-//}
+extension todoViewController : UISearchBarDelegate{
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        
+       todoItems = todoItems?.filter("title CONTAINS[cd] %@", searchBar.text!).sorted(byKeyPath: "title", ascending: true)
+       print("TRIED SEARCHING")
+        self.tableView.reloadData()
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0{
+            loadItems()
+        
+        DispatchQueue.main.async {
+            searchBar.resignFirstResponder()
+        }
+    }
+}
+}
 
